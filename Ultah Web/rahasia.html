@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rahasia 🔒</title>
+    <link rel="stylesheet" href="rahasia.css">
+</head>
+<body>
+
+    <!-- STARS -->
+    <div class="stars" id="stars"></div>
+
+    <!-- FLOATING HEARTS -->
+    <div class="hearts-container" id="heartsContainer"></div>
+
+    <!-- CONFETTI CANVAS -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- BACK BUTTON -->
+    <a href="Ultah.html" class="back-btn">← Kembali</a>
+
+    <!-- MAIN CARD -->
+    <div class="confession-wrapper" id="confessionWrapper">
+        <div class="confession-card">
+            <div class="emoji-row">💖✨💕</div>
+
+            <div class="counter" id="counter">1 / 6</div>
+
+            <div class="progress-dots" id="progressDots"></div>
+
+            <div class="message-area">
+                <p class="message" id="confessionMessage"></p>
+            </div>
+
+            <button class="btn-next" id="nextBtn">
+                <span id="btnText">Next</span>
+                <span>→</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================
+        //  1. STARS
+        // =====================================================
+        (function createStars() {
+            const container = document.getElementById('stars');
+            if (!container) return;
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (2 + Math.random() * 4) + 's');
+                star.style.animationDelay = Math.random() * 4 + 's';
+                star.style.width = star.style.height = (1 + Math.random() * 3) + 'px';
+                container.appendChild(star);
+            }
+        })();
+
+        // =====================================================
+        //  2. FLOATING HEARTS
+        // =====================================================
+        (function createHearts() {
+            const container = document.getElementById('heartsContainer');
+            if (!container) return;
+            const hearts = ['💖', '💕', '💗', '💝', '✨', '💘', '❤️'];
+            for (let i = 0; i < 18; i++) {
+                const el = document.createElement('div');
+                el.className = 'heart-float';
+                el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                el.style.left = Math.random() * 100 + '%';
+                el.style.fontSize = (1.2 + Math.random() * 1.8) + 'rem';
+                el.style.setProperty('--h-speed', (8 + Math.random() * 12) + 's');
+                el.style.setProperty('--h-delay', (Math.random() * 14) + 's');
+                container.appendChild(el);
+            }
+        })();
+
+        // =====================================================
+        //  3. CONFESSION MESSAGES
+        // =====================================================
+        const messages = [
+            "Hai... ada yang pengen aku sampaikan nih...",
+            "Awalnya kita cuma chat biasa aja...",
+            "Tapi makin kesini, aku ngerasa ada yang beda...",
+            "Setiap notif dari kamu tuh... bikin senyum-senyum sendiri.",
+            "Aku nyaman banget sama kamu, walau cuma lewat layar...",
+            "AKU SUKA SAMA KAMU! 💖 Mau jadi pacarku? 😊"
+        ];
+
+        // Track which messages have special styling
+        const specialIndices = [5];   // climax message (last)
+
+        let currentIndex = 0;
+        const messageEl = document.getElementById('confessionMessage');
+        const nextBtn = document.getElementById('nextBtn');
+        const btnText = document.getElementById('btnText');
+        const counterEl = document.getElementById('counter');
+        const dotsContainer = document.getElementById('progressDots');
+        const wrapper = document.getElementById('confessionWrapper');
+
+        // Create dots
+        messages.forEach((_, i) => {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            if (i === 0) dot.classList.add('active');
+            dotsContainer.appendChild(dot);
+        });
+
+        function updateDots(index) {
+            const dots = dotsContainer.querySelectorAll('.dot');
+            dots.forEach((dot, i) => {
+                dot.classList.remove('active', 'done');
+                if (i < index) dot.classList.add('done');
+                if (i === index) dot.classList.add('active');
+            });
+        }
+
+        function showMessage(index) {
+            if (index < 0 || index >= messages.length) return;
+            currentIndex = index;
+
+            // Exit animation
+            messageEl.classList.remove('message-enter', 'special', 'climax');
+            messageEl.classList.add('message-exit');
+
+            setTimeout(() => {
+                // Set new text
+                messageEl.textContent = messages[index];
+                messageEl.classList.remove('message-exit');
+
+                // Apply special styling
+                if (index === messages.length - 1) {
+                    messageEl.classList.add('climax');
+                } else if (specialIndices.includes(index)) {
+                    messageEl.classList.add('special');
+                }
+
+                // Enter animation
+                messageEl.classList.add('message-enter');
+
+                // Update counter
+                if (counterEl) {
+                    counterEl.textContent = (index + 1) + ' / ' + messages.length;
+                }
+
+                // Update dots
+                updateDots(index);
+
+                // Handle button state
+                if (index === messages.length - 1) {
+                    // Last message: change button
+                    btnText.textContent = '❤️ Kirim';
+                    nextBtn.classList.add('final');
+                    // Trigger confetti at climax
+                    launchConfetti();
+                } else {
+                    btnText.textContent = 'Next';
+                    nextBtn.classList.remove('final');
+                }
+            }, 350);
+        }
+
+        // Next button click
+        nextBtn.addEventListener('click', function() {
+            if (currentIndex < messages.length - 1) {
+                showMessage(currentIndex + 1);
+            } else {
+                // Climax action: show sweet alert / redirect / special effect
+                climaxAction();
+            }
+        });
+
+        function climaxAction() {
+            // Disable button to prevent double-click
+            nextBtn.disabled = true;
+            nextBtn.textContent = '💖 💖 💖';
+
+            // Create massive heart explosion
+            createHeartExplosion();
+
+            // Show a special overlay after a moment
+            setTimeout(() => {
+                showLoveOverlay();
+            }, 1200);
+        }
+
+        // =====================================================
+        //  4. CONFETTI SYSTEM
+        // =====================================================
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+        let confettiPieces = [];
+        let confettiAnimId = null;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class ConfettiPiece {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height;
+                this.w = 6 + Math.random() * 8;
+                this.h = 6 + Math.random() * 6;
+                this.color = ['#ff6b9d', '#ff2e63', '#ffd700', '#ff1493', '#ff69b4', '#ffa07a', '#ff4500'][Math.floor(Math.random() * 7)];
+                this.rotation = Math.random() * 360;
+                this.rotSpeed = (Math.random() - 0.5) * 8;
+                this.speedY = 2 + Math.random() * 4;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.opacity = 0.8 + Math.random() * 0.2;
+                this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+            }
+
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.rotation += this.rotSpeed;
+                this.speedY += 0.05;
+                if (this.speedX > 0) this.speedX += 0.02;
+                else this.speedX -= 0.02;
+                if (this.y > canvas.height + 20) {
+                    this.y = -20;
+                    this.x = Math.random() * canvas.width;
+                    this.speedY = 2 + Math.random() * 4;
+                }
+                if (this.x < -20) this.x = canvas.width + 20;
+                if (this.x > canvas.width + 20) this.x = -20;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                if (this.shape === 'rect') {
+                    ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function launchConfetti() {
+            // Add a burst of confetti
+            for (let i = 0; i < 60; i++) {
+                const p = new ConfettiPiece();
+                p.y = Math.random() * canvas.height * -1;
+                p.speedY = 1 + Math.random() * 5;
+                confettiPieces.push(p);
+            }
+
+            if (!confettiAnimId) {
+                animateConfetti();
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confettiPieces.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            confettiAnimId = requestAnimationFrame(animateConfetti);
+        }
+
+        // =====================================================
+        //  5. HEART EXPLOSION (finale)
+        // =====================================================
+        function createHeartExplosion() {
+            const container = document.createElement('div');
+            container.style.cssText = `
+                position: fixed; top: 0; left: 0;
+                width: 100%; height: 100%;
+                pointer-events: none; z-index: 15;
+            `;
+            document.body.appendChild(container);
+
+            const emojis = ['💖', '💕', '💗', '💝', '❤️', '💘', '💓', '✨', '🥰', '😍'];
+            for (let i = 0; i < 50; i++) {
+                const heart = document.createElement('div');
+                heart.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                heart.style.cssText = `
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    font-size: ${1.5 + Math.random() * 2.5}rem;
+                    transform: translate(-50%, -50%) scale(0);
+                    opacity: 0;
+                    transition: all ${1.5 + Math.random() * 2}s cubic-bezier(0.22, 1, 0.36, 1);
+                `;
+                container.appendChild(heart);
+
+                // Trigger animation in next frame
+                requestAnimationFrame(() => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 100 + Math.random() * 300;
+                    const x = Math.cos(angle) * distance;
+                    const y = Math.sin(angle) * distance;
+                    heart.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${0.8 + Math.random() * 1.2})`;
+                    heart.style.opacity = '0.9';
+                });
+            }
+
+            // Remove after animation
+            setTimeout(() => {
+                container.remove();
+            }, 4000);
+        }
+
+        // =====================================================
+        //  6. LOVE OVERLAY (final message)
+        // =====================================================
+        function showLoveOverlay() {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0;
+                width: 100%; height: 100%;
+                display: flex; flex-direction: column;
+                align-items: center; justify-content: center;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                z-index: 20;
+                opacity: 0;
+                transition: opacity 0.8s ease;
+                padding: 30px;
+                text-align: center;
+            `;
+            overlay.innerHTML = `
+                <div style="font-size: 5rem; margin-bottom: 20px; animation: emojiBounce 1.5s ease-in-out infinite;">💖</div>
+                <h2 style="font-size: 2.8rem; color: white; font-weight: 800; margin-bottom: 12px;
+                    background: linear-gradient(135deg, #ff6b9d, #ffd700);
+                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                    background-clip: text;">
+                    I LIKE YOU! ❤️
+                </h2>
+                <p style="font-size: 1.3rem; color: rgba(255,255,255,0.8); margin-bottom: 30px; letter-spacing: 1px;">
+                    Mau jadi pacarku? 😊
+                </p>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                    <button onclick="this.parentElement.parentElement.remove(); document.getElementById('nextBtn').disabled = false; document.getElementById('nextBtn').textContent = '💖 Dikirim! 💖';"
+                        style="padding: 14px 40px; font-size: 1.2rem; font-weight: 700;
+                        background: linear-gradient(135deg, #ff6b9d, #ff2e63);
+                        color: white; border: none; border-radius: 60px; cursor: pointer;
+                        font-family: inherit; transition: transform 0.3s ease;
+                        box-shadow: 0 8px 30px rgba(255, 46, 99, 0.5);"
+                        onmouseover="this.style.transform='scale(1.06)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                        ❤️ IYA!
+                    </button>
+                    <button onclick="this.style.transform='translateX('+(Math.random()*200-100)+'px) translateY('+(Math.random()*200-100)+'px)';"
+                        style="padding: 14px 40px; font-size: 1.2rem; font-weight: 600;
+                        background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
+                        border: 2px solid rgba(255,255,255,0.15); border-radius: 60px; cursor: pointer;
+                        font-family: inherit; transition: transform 0.2s ease;
+                        backdrop-filter: blur(5px);">
+                        😅... Ehe
+                    </button>
+                </div>
+                <p style="margin-top: 25px; font-size: 0.85rem; color: rgba(255,255,255,0.3); letter-spacing: 2px;">
+                    (tombol "Ehe" bakalan kabur terus 😂)
+                </p>
+                <style>
+                    @keyframes emojiBounce {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.2); }
+                    }
+                </style>
+            `;
+            document.body.appendChild(overlay);
+
+            // Fade in
+            requestAnimationFrame(() => {
+                overlay.style.opacity = '1';
+            });
+
+            // More confetti!
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const p = new ConfettiPiece();
+                    confettiPieces.push(p);
+                }, i * 30);
+            }
+        }
+
+        // =====================================================
+        //  7. INIT
+        // =====================================================
+        // Show card after a moment
+        setTimeout(() => {
+            wrapper.classList.add('visible');
+        }, 400);
+
+        // Show first message
+        messageEl.textContent = messages[0];
+        messageEl.classList.add('message-enter');
+        counterEl.textContent = '1 / ' + messages.length;
+    </script>
+
+</body>
+</html>
+
